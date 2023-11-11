@@ -4,7 +4,7 @@
 convert tsv to bargraph(console text)
 
 ```
-perl tsv2bargraph.pl [OPTIONS] TSVFILE.tsv
+tsv2bargraph.pl [OPTIONS] TSVFILE.tsv
 ```
 
 - INPUT: 対象（入力）ファイル

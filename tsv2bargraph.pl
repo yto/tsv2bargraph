@@ -2,43 +2,46 @@
 # -*- coding: utf-8 -*-
 use strict;
 use warnings;
-use List::Util qw(max);
+use List::Util qw(max sum);
 use Getopt::Long;
 
 my $key_str = 1;
 my $width = 50;
 my $diff_mode;
-my @chs = ("-", "+", ".", "|");
+my $stack_mode; # 積み上げ棒グラフ
+my $graph_type = ""; # default: single, "g": grouped, "s": stacked
+my @chs = ();
 my $de = "\t";
 GetOptions(
     "key=s" => \$key_str,
     "width=s" => \$width,
     "diff" => \$diff_mode,
+    "type=s" => \$graph_type,
     "char=s" => \@chs,
     "delim=s" => \$de,
     );
 
+@chs = ("-", "+", ".", "|") if not @chs;
 my @keys = map {$_-1} split(",", $key_str);
 
 my @lines = map {chomp; [split($de, $_)]} <>;
 my $max = max(map {my $t = $_; map {$t->[$_]||0} @keys} @lines);
+$max = max(map {my $t = $_; sum(map {$t->[$_]||0} @keys)} @lines) if $graph_type eq "s";
 
 foreach my $lr (@lines) {
-    if ($diff_mode and @keys == 2) { # diff mode : 2つの数値をマージして比較
-	my @lens = map {int(($lr->[$keys[$_]]||0) / $max * $width)} (0, 1);
-	my $i = $lens[0] <= $lens[1] ? 0 : 1;
-	my $bar = ($chs[$i] x $lens[$i]).($chs[$i-1] x abs($lens[0]-$lens[1]));
-	print join("\t", @$lr, $bar)."\n";
-    } elsif (@keys >= 2) { # 2つ以上の数値を複数行で表示
-	for (my $i = 0; $i < @keys; $i++) {
-	    my $len = int(($lr->[$keys[$i]]||0) / $max * $width);
-	    my @cs = @$lr;
-	    $cs[$keys[$i]] .= "*";
-	    print join("\t", @cs, ($chs[$i%@chs] x $len))."\n";
-	}
-    } elsif (@keys == 1) { # 数値が一つの場合
+    if (@keys == 1) { # bar graph: 普通の棒グラフ (数値が一つの場合)
 	my $len = int(($lr->[$keys[0]]) / $max * $width);
 	print join("\t", @$lr, ($chs[0] x $len))."\n";
+    } elsif ($graph_type eq 's' and @keys >= 2) { # stacked bar graph : 積み上げ棒グラフ
+	my $len = int(($lr->[$keys[$_]]||0) / $max * $width + 0.5);
+	my $bar = join("", map {$chs[$_] x $len} 0..$#keys);
+	print join("\t", @$lr, $bar)."\n";
+    } elsif (@keys >= 2) {  # grouped bar graph: 集合棒グラフ
+	for (my $i = 0; $i < @keys; $i++) {
+	    my $len = int(($lr->[$keys[$i]]||0) / $max * $width);
+	    my @cs = map {$_ == $keys[$i] ? $_."*" : $_} 0..$#$lr;
+	    print join("\t", @cs, ($chs[$i%@chs] x $len))."\n";
+	}
     } else {
 	die;
     }
