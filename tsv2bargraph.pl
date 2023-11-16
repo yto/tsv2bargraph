@@ -29,18 +29,24 @@ my $max = max(map {my $t = $_; map {$t->[$_]||0} @keys} @lines);
 $max = max(map {my $t = $_; sum(map {$t->[$_]||0} @keys)} @lines) if $graph_type eq "s";
 
 foreach my $lr (@lines) {
-    if (@keys == 1) { # bar graph: 普通の棒グラフ (数値が一つの場合)
+    if (@keys == 1) {
+	### bar graph: 普通の棒グラフ (数値が一つの場合)
 	my $len = int(($lr->[$keys[0]]) / $max * $width);
-	print join("\t", @$lr, ($chs[0] x $len))."\n";
-    } elsif ($graph_type eq 's' and @keys >= 2) { # stacked bar graph : 積み上げ棒グラフ
-	my $len = int(($lr->[$keys[$_]]||0) / $max * $width + 0.5);
-	my $bar = join("", map {$chs[$_] x $len} 0..$#keys);
-	print join("\t", @$lr, $bar)."\n";
-    } elsif (@keys >= 2) {  # grouped bar graph: 集合棒グラフ
+	print join($de, @$lr, ($chs[0] x $len))."\n";
+    } elsif ($graph_type eq 's' and @keys >= 2) {
+	### stacked bar graph : 積み上げ棒グラフ
+	my $bar = "";
+	for (my $i = 0; $i < @keys; $i++) {
+	    my $len = int(($lr->[$keys[$i]]||0) / $max * $width + 0.5);
+	    $bar .= $chs[$i] x $len;
+	}
+	print join($de, @$lr, $bar)."\n";
+    } elsif (@keys >= 2) {
+	### grouped bar graph: 集合棒グラフ
 	for (my $i = 0; $i < @keys; $i++) {
 	    my $len = int(($lr->[$keys[$i]]||0) / $max * $width);
-	    my @cs = map {$_ == $keys[$i] ? $_."*" : $_} 0..$#$lr;
-	    print join("\t", @cs, ($chs[$i%@chs] x $len))."\n";
+	    my @cs = map {$_ == $keys[$i] ? $lr->[$_]."*" : $lr->[$_]} 0..$#$lr;
+	    print join($de, @cs, ($chs[$i%@chs] x $len))."\n";
 	}
     } else {
 	die;
